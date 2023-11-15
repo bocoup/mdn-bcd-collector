@@ -952,9 +952,18 @@ describe("BCD updater", () => {
             })(),
           ),
           [
-            {browser: "chrome", debug: {stack: [{result: {path: "chrome.api"}, step: 'path'}]}, path: "chrome.api", 
-            shared: {},},
-            {browser: "edge", debug: {stack: [{result: {path: "edge.api"}, step: 'path'}]}, path: "edge.api",             shared: {},},
+            {
+              browser: "chrome",
+              debug: {stack: [{result: {path: "chrome.api"}, step: "path"}]},
+              path: "chrome.api",
+              shared: {},
+            },
+            {
+              browser: "edge",
+              debug: {stack: [{result: {path: "edge.api"}, step: "path"}]},
+              path: "edge.api",
+              shared: {},
+            },
           ] as UpdateInternal[],
         );
       });
@@ -986,10 +995,22 @@ describe("BCD updater", () => {
             })(),
           ),
           [
-            {browser: "chrome", debug: {stack: [{result: {path: "chrome.api"}, step: 'provide_path'}]}, path: "chrome.api", 
-            shared: {},},
-            {browser: "edge", debug: {stack: [{result: {path: "edge.api"}, step: 'provide_path'}]}, path: "edge.api", 
-            shared: {},},
+            {
+              browser: "chrome",
+              debug: {
+                stack: [{result: {path: "chrome.api"}, step: "provide_path"}],
+              },
+              path: "chrome.api",
+              shared: {},
+            },
+            {
+              browser: "edge",
+              debug: {
+                stack: [{result: {path: "edge.api"}, step: "provide_path"}],
+              },
+              path: "edge.api",
+              shared: {},
+            },
           ] as UpdateInternal[],
         );
       });
