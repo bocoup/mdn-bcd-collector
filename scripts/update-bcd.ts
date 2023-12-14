@@ -686,44 +686,85 @@ const skipCurrentBeforeSupport = skip("currentBeforeSupport", ({
 
 export const hasSupportUpdates = (
   versionMap: BrowserSupportMap,
-  simpleStatement?: SimpleSupportStatement,
+  simpleStatements: SimpleSupportStatement[],
 ) => {
-  if (!simpleStatement || simpleStatement.version_added === null) {
+  if (!simpleStatements.length) {
     return true;
   }
 
+  const sortedMap = new Map(
+    [...versionMap].sort((a, b) => Number(a)[0] - Number(b)[0]),
+  );
+
+  const sortedStatements = simpleStatements.reverse();
+
   const updates: string[] = [];
-  for (const [version, hasSupport] of versionMap.entries()) {
+  for (const [version, hasSupport] of sortedMap.entries()) {
     if (hasSupport === null) {
       continue;
     }
 
-    if (typeof simpleStatement.version_added === "boolean") {
-      if (!simpleStatement.version_added && !hasSupport) {
-        continue;
-      } else {
-        updates.push(version);
+    let hasUpdate = false;
+    for (const {version_added, version_removed} of sortedStatements) {
+      if (version_added === null) {
+        hasUpdate = true;
       }
-    }
 
-    if (typeof simpleStatement.version_added === "string") {
-      if (simpleStatement.version_added === "preview") {
-        if (hasSupport) {
-          updates.push(version);
+      const simpleAdded =
+        version_added &&
+        typeof version_added === "string" &&
+        version_added.replace("≤", "");
+      const simpleRemoved =
+        version_removed &&
+        typeof version_removed === "string" &&
+        version_removed.replace("≤", "");
+      if (hasSupport) {
+        // boolean checks
+        if (version_added === "preview") {
+          hasUpdate = true;
         }
-        continue;
+
+        if (simpleAdded && compareVersions(version, simpleAdded, "<")) {
+          hasUpdate = true;
+          continue;
+        }
+
+        if (simpleRemoved && compareVersions(version, simpleRemoved, ">=")) {
+          if (simpleAdded && !compareVersions(version, simpleAdded, "<")) {
+            hasUpdate = true;
+            continue;
+          }
+        }
+      } else {
+        // boolean checks
+        if (simpleAdded && compareVersions(version, simpleAdded, ">=")) {
+          if (simpleRemoved && !compareVersions(version, simpleRemoved, "<")) {
+            continue;
+          }
+          hasUpdate = true;
+          continue;
+        }
+
+        if (simpleRemoved && compareVersions(version, simpleRemoved, "<")) {
+          hasUpdate = true;
+          continue;
+        }
       }
 
-      const simpleAdded = simpleStatement.version_added.replace("≤", "");
-      if (compareVersions(version, simpleAdded, "<") && hasSupport) {
-        updates.push(version);
-      }
-      if (compareVersions(version, simpleAdded, ">=") && !hasSupport) {
-        updates.push(version);
-      }
+      hasUpdate = false;
+      // if (typeof simpleStatement.version_added === "boolean") {
+      //   if (!simpleStatement.version_added && !hasSupport) {
+      //     continue;
+      //   } else {
+      //     hasUpdate = true;
+      //   }
+      // }
+    }
+    if (hasUpdate) {
+      updates.push(version);
     }
   }
-  return updates.length > 0;
+  return Boolean(updates.length);
 };
 
 const persistInferredRange = provideStatements(
@@ -970,9 +1011,9 @@ export const update = (
     provideDefaultStatements,
     skip("supportMatrixMatchesDefaultStatements", ({
       shared: {versionMap},
-      defaultStatements: [simpleStatement],
+      defaultStatements,
     }) => {
-      if (!hasSupportUpdates(versionMap, simpleStatement)) {
+      if (!hasSupportUpdates(versionMap, defaultStatements)) {
         return reason(
           ({path, browser}) =>
             `$${path} skipped for ${browser} because support matrix matches current BCD support data`,
@@ -1031,11 +1072,11 @@ export const update = (
     clearNonExact(options.exactOnly),
     skip("noStatement", ({
       statements,
-      defaultStatements: [simpleStatement],
+      defaultStatements,
       shared: {versionMap},
     }) => {
       if (!statements?.length) {
-        if (hasSupportUpdates(versionMap, simpleStatement)) {
+        if (hasSupportUpdates(versionMap, defaultStatements)) {
           return reason(
             ({browser, path}) =>
               `${path} skipped for ${browser} with unresolved differences between support matrix and BCD data. Possible intervention required.`,
