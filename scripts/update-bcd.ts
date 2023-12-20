@@ -814,11 +814,31 @@ const skipCurrentBeforeSupport = skip("currentBeforeSupport", ({
   }
 });
 
+const isSupported = (version: string, statements: SimpleSupportStatement[]) => {
+  for (const {version_added, version_removed} of statements) {
+    if (
+      version_added &&
+      typeof version_added === "string" &&
+      compareVersions(version, version_added.replace("≤", ""), ">=")
+    ) {
+      if (
+        version_removed &&
+        typeof version_removed === "string" &&
+        compareVersions(version, version_removed.replace("≤", ""), ">=")
+      ) {
+        continue;
+      }
+      return true;
+    }
+  }
+  return false;
+};
+
 export const hasSupportUpdates = (
   versionMap: BrowserSupportMap,
-  simpleStatement?: SimpleSupportStatement,
+  defaultStatements: SimpleSupportStatement[],
 ) => {
-  if (!simpleStatement || simpleStatement.version_added === null) {
+  if (!defaultStatements.length) {
     return true;
   }
 
@@ -827,30 +847,8 @@ export const hasSupportUpdates = (
     if (hasSupport === null) {
       continue;
     }
-
-    if (typeof simpleStatement.version_added === "boolean") {
-      if (!simpleStatement.version_added && !hasSupport) {
-        continue;
-      } else {
-        updates.push(version);
-      }
-    }
-
-    if (typeof simpleStatement.version_added === "string") {
-      if (simpleStatement.version_added === "preview") {
-        if (hasSupport) {
-          updates.push(version);
-        }
-        continue;
-      }
-
-      const simpleAdded = simpleStatement.version_added.replace("≤", "");
-      if (compareVersions(version, simpleAdded, "<") && hasSupport) {
-        updates.push(version);
-      }
-      if (compareVersions(version, simpleAdded, ">=") && !hasSupport) {
-        updates.push(version);
-      }
+    if (hasSupport !== isSupported(version, defaultStatements)) {
+      updates.push(version);
     }
   }
   return updates.length > 0;

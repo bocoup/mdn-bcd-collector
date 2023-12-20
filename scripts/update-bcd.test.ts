@@ -982,6 +982,84 @@ describe("BCD updater", () => {
       );
     });
 
+    it.only("detects updates across multiple default statements", () => {
+      assert.isFalse(
+        hasSupportUpdates(
+          new Map([
+            ["10", true],
+            ["29", false],
+            ["30", true],
+          ]),
+          [
+            {
+              version_added: "30",
+            },
+            {
+              version_removed: "20",
+              version_added: "≤10",
+            },
+          ],
+        ),
+      );
+
+      assert.isFalse(
+        hasSupportUpdates(
+          new Map([
+            ["19", true],
+            ["29", false],
+            ["30", true],
+          ]),
+          [
+            {
+              version_added: "30",
+            },
+            {
+              version_removed: "20",
+              version_added: "≤10",
+            },
+          ],
+        ),
+      );
+
+      assert.isTrue(
+        hasSupportUpdates(
+          new Map([
+            ["9", true],
+            ["29", false],
+            ["30", true],
+          ]),
+          [
+            {
+              version_added: "30",
+            },
+            {
+              version_removed: "20",
+              version_added: "≤10",
+            },
+          ],
+        ),
+      );
+
+      assert.isTrue(
+        hasSupportUpdates(
+          new Map([
+            ["10", true],
+            ["29", true],
+            ["30", true],
+          ]),
+          [
+            {
+              version_added: "30",
+            },
+            {
+              version_removed: "20",
+              version_added: "≤10",
+            },
+          ],
+        ),
+      );
+    });
+
     it("detects updates for preview statements", () => {
       assert.isTrue(
         hasSupportUpdates(new Map([["81", true]]), {
